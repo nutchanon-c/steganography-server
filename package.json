@@ -1,0 +1,11 @@
+{
+  "name": "steganography-server",
+  "version": "1.0.0",
+  "main": "index.js",
+  "author": "nutchanon-c <nutchanon.char@gmail.com>",
+  "license": "MIT",
+  "dependencies": {
+    "any-steganography": "^1.1.3",
+    "aws-sdk": "^2.1248.0"
+  }
+}
