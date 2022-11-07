@@ -20,7 +20,6 @@ const executeTerminalCommand = (command) => {
 };
 
 const generateABEKey = (attributes, keyName) => {
-  // TODO: implement
   /*
   cpabe-keygen -o kevin_priv_key pub_key master_key \
     business_staff strategy_team 'executive_level = 7' \
