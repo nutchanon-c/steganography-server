@@ -25,9 +25,13 @@ const generateABEKey = (attributes, keyName) => {
     business_staff strategy_team 'executive_level = 7' \
     'office = 2362' 'hire_date = '`date +%s`
   */
+  let attrJoin = attributes.join(" ");
+  // console.log(
+  //   `cpabe-keygen -o ${keyName} ${PUB_KEY_PATH} ${MASTER_KEY_PATH} ${attrJoin}`
+  // );
 
   executeTerminalCommand(
-    `cpabe-keygen -o ${keyName} ${PUB_KEY_PATH} ${MASTER_KEY_PATH} ${attributes}`
+    `cpabe-keygen -o ${keyName} ${PUB_KEY_PATH} ${MASTER_KEY_PATH} ${attrJoin}`
   );
 
   console.log(`${keyName} generated`);
