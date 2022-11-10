@@ -98,36 +98,41 @@ router.post("/new", async (request, response) => {
   //To access POST variable use req.body()methods.
   console.log(request.body);
   let set_id = uuidv4();
-  createPerson(request.body.uuid, ["attr1", "attr2"]).then(() => {
+  const user_attributes = request.body.user_attributes;
+  const keyPath = request.body.keyPath;
+  const uuid = request.body.uuid;
+  // TODO: RECEIVE ATTRIBUTE LIST FROM CLIENT
+  createPerson(uuid, user_attributes).then(() => {
     // createImageSet(null, set_id, ["attr1", "attr2"]);
 
-    // TODO: ADD ALL DATA TO DATABASE
-    createImageSet(set_id, ["attr1", "attr2"]).then((query) => {
+    // ADD ALL DATA TO DATABASE
+    createImageSet(set_id, user_attributes).then((query) => {
       if (query) {
         console.log("added image set");
-        createESK(request.body.keyPath).then((query1) => {
+        createESK(keyPath).then((query1) => {
           if (query1) {
-            createR_EncSK_ImageSet(set_id, request.body.keyPath).then(
+            createR_EncSK_ImageSet(set_id, keyPath).then(
               (query1) => {
                 if (query1) {
                   for (let i = 0; i < request.body.files.length; i++) {
                     console.log(i);
+                    const fileUrl = request.body.files[i].url;
                     createStegoImage(
-                      request.body.files[i].url,
+                      fileUrl,
                       request.body.files[i].sequence
                     ).then((query) => {
                       if (query) {
                         console.log(`added stego image`);
                         createR_SG_ImageSet(
                           set_id,
-                          request.body.files[i].url
+                          fileUrl
                         ).then(() => {
                           createR_SG_EncSK(
-                            request.body.files[i].url,
-                            request.body.keyPath
+                            fileUrl,
+                            keyPath
                           ).then(() => {
                             createR_DataOwner_ImageSet(
-                              request.body.uuid,
+                              uuid,
                               set_id
                             ).then(() => {
                               console.log("added");
@@ -145,8 +150,6 @@ router.post("/new", async (request, response) => {
       }
     });
   });
-
-  // TODO: CREATE RELATIONSHIP
 
   response.json({ msg: "Success", setID: set_id });
 });
