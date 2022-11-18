@@ -37,6 +37,12 @@ import {
   createR_SG_EncSK,
   createR_SG_ImageSet,
   createStegoImage,
+  edit_encSK,
+  query_EncSK,
+  query_file_owner,
+  query_image,
+  query_imageset_permissionAttributes,
+  query_user_attributes,
 } from "./gdb.js";
 const router = express.Router();
 const PORT = 3000;
@@ -101,7 +107,6 @@ router.post("/new", async (request, response) => {
   const user_attributes = request.body.user_attributes;
   const keyPath = request.body.keyPath;
   const uuid = request.body.uuid;
-  // TODO: RECEIVE ATTRIBUTE LIST FROM CLIENT
   createPerson(uuid, user_attributes).then(() => {
     // createImageSet(null, set_id, ["attr1", "attr2"]);
 
@@ -111,40 +116,29 @@ router.post("/new", async (request, response) => {
         console.log("added image set");
         createESK(keyPath).then((query1) => {
           if (query1) {
-            createR_EncSK_ImageSet(set_id, keyPath).then(
-              (query1) => {
-                if (query1) {
-                  for (let i = 0; i < request.body.files.length; i++) {
-                    console.log(i);
-                    const fileUrl = request.body.files[i].url;
-                    createStegoImage(
-                      fileUrl,
-                      request.body.files[i].sequence
-                    ).then((query) => {
-                      if (query) {
-                        console.log(`added stego image`);
-                        createR_SG_ImageSet(
-                          set_id,
-                          fileUrl
-                        ).then(() => {
-                          createR_SG_EncSK(
-                            fileUrl,
-                            keyPath
-                          ).then(() => {
-                            createR_DataOwner_ImageSet(
-                              uuid,
-                              set_id
-                            ).then(() => {
-                              console.log("added");
-                            });
+            createR_EncSK_ImageSet(set_id, keyPath).then((query1) => {
+              if (query1) {
+                for (let i = 0; i < request.body.files.length; i++) {
+                  console.log(i);
+                  const fileUrl = request.body.files[i].url;
+                  createStegoImage(
+                    fileUrl,
+                    request.body.files[i].sequence
+                  ).then((query) => {
+                    if (query) {
+                      console.log(`added stego image`);
+                      createR_SG_ImageSet(set_id, fileUrl).then(() => {
+                        createR_SG_EncSK(fileUrl, keyPath).then(() => {
+                          createR_DataOwner_ImageSet(uuid, set_id).then(() => {
+                            console.log("added");
                           });
                         });
-                      }
-                    });
-                  }
+                      });
+                    }
+                  });
                 }
               }
-            );
+            });
           }
         });
       }
@@ -158,32 +152,66 @@ router.post("/request", (request, response) => {
   console.log(request.body);
   let set_id = request.body.set_id;
   let uuid = request.body.uuid;
-  let user_attr = []; // TODO: QUERY USER'S ATTRIBUTES
-  let set_attr = []; // TODO: QUERY FILE ATTR
-  if (checkArrayEqual(user_attr, set_attr)) {
-    response.json({
-      files_url: ["url1", "url2"],
-      key_url: "encrypted key url",
+  query_user_attributes(uuid).then((attr) => {
+    let user_attr = attr.split(",");
+    query_imageset_permissionAttributes(set_id).then((picAttrString) => {
+      let set_attr = picAttrString.split(",");
+      if (checkArrayEqual(user_attr, set_attr)) {
+        query_EncSK(set_id, picAttrString).then((encSK_url) => {
+          // get all image url of an image set
+          query_image(set_id).then((sets) => {
+            response.json({
+              files_url: sets,
+              key_url: encSK_url,
+            });
+          });
+        });
+      } else {
+        response.json({
+          msg: "Error, mismatch attributes",
+        });
+      }
     });
-  } else {
-    response.json({
-      msg: "Error, mismatch attributes",
-    });
-  }
+  });
 });
 
 router.post("/revoke", async (request, response) => {
   console.log(request.body);
   let uuid = request.body.uuid;
   let new_attr = request.body.new_attr;
-  let isOwner = true; // TODO: CHECK OWNER
-  let encryptedSessionKeyUrl = TEST_DOWNLOAD_URL; // TODO: query session key
-  await downloadFile(encryptedSessionKeyUrl, `${uuid}.key.cpabe`).then(() => {
-    console.log(`download key path: ./downloads/${uuid}.key.cpabe`);
+  let set_id = request.body.set_id;
+  let finished = false;
+
+  query_file_owner(set_id).then((owner) => {
+    let isOwner = owner === uuid;
+    {
+      if (isOwner) {
+        query_imageset_permissionAttributes(set_id).then((set_attr) => {
+          query_EncSK(set_id, set_attr).then((url) => {
+            let encryptedSessionKeyUrl = url;
+            downloadFile(encryptedSessionKeyUrl, `${uuid}.key.cpabe`).then(
+              () => {
+                console.log(`download key path: ./downloads/${uuid}.key.cpabe`);
+                decryptSK(`./downloads/${uuid}.key.cpabe`);
+                generateABEKey(new_attr, `./downloads/${uuid}.key`);
+                uploadFile(
+                  `./downloads/${uuid}.key`,
+                  `${uuid}/${uuid.key}`
+                ).then((location) => {
+                  edit_encSK(encryptedSessionKeyUrl, location).then(() => {
+                    finished = true;
+                  });
+                });
+              }
+            );
+          });
+        });
+      } else {
+        finished = false;
+      }
+    }
   });
 
-  // TODO: RE-ENCRYPT SESSION KEY
-  let finished = true;
   if (finished) {
     response.json({ msg: "success" });
   } else {
@@ -206,33 +234,20 @@ const uploadFile = async (localFilePath, cloudFilePath) => {
     Body: fileContent,
   };
 
-  // s3.upload(params, (err, data) => {
-  //   if (err) {
-  //     console.log(err);
-  //   }
-
-  //   return data.Location;
-  // });
-
   const data = await s3.upload(params).promise(); // this line
   console.log(`File uploaded successfully. ${data.Location}`);
   return data.Location;
 };
 
-// uploadFile(
-//   "/home/ubuntu/steganography-server/test-files/testkey.txt",
-//   "keys/testkey.txt"
-// ).then((url) => console.log(url));
-
 const executeTerminalCommand = (command) => {
-  exec(command, (error, stdout, stderr) => {
+  return exec(command, (error, stdout, stderr) => {
     if (error) {
       console.log(`error: ${error.message}`);
-      return;
+      return true;
     }
     if (stderr) {
       console.log(`stderr: ${stderr}`);
-      return;
+      return false;
     }
     console.log(`stdout: ${stdout}`);
   });
@@ -254,6 +269,12 @@ const generateABEKey = (attributes, keyName) => {
   );
 
   console.log(`${keyName} generated`);
+};
+
+const decryptSK = (keyName) => {
+  return executeTerminalCommand(
+    `cpabe-dec ${PUB_KEY_PATH} ${MASTER_KEY_PATH} ${keyName}`
+  );
 };
 
 switch (command) {
