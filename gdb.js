@@ -340,11 +340,162 @@ export async function createR_DataOwner_ImageSet(dataOwner, imageSet) {
   }
 }
 
-// createRelationship(
-//   driver,
-//   personName,
-//   person2Name,
-//   person3Name,
-//   person4Name,
-//   1
-// );
+//testing Query user's attributes function
+export async function query_user_attributes(userID) {
+  const session = driver.session({ database: "neo4j" });
+  try {
+    console.log("Execute user attribute retrival query");
+    const readQuery = `
+
+      MATCH (p:Person)
+      WHERE p.uid = '${userID}'
+      RETURN p.attriList AS attriList
+      
+      `;
+
+    const readResult = await session.executeRead((tx) =>
+      tx.run(readQuery, { userID })
+    );
+
+    readResult.records.forEach((record) => {
+      console.log(`Found attributes: ${record.get("attriList")}`);
+    });
+  } catch (error) {
+    console.error(`Something went wrong: ${error}`);
+  } finally {
+    await session.close();
+  }
+}
+
+//testing Query imageset permit attributes function
+export async function query_imageset_permissionAttributes(pictureset_id) {
+  const session = driver.session({ database: "neo4j" });
+  try {
+    console.log("Execute imageset permit attribute retrival query");
+    const readQuery = `
+      MATCH (p:IS)
+      WHERE p.psid = '${pictureset_id}'
+      RETURN p.permitAttriList AS permitAttriList
+      
+      `;
+
+    const readResult = await session.executeRead((tx) =>
+      tx.run(readQuery, { pictureset_id })
+    );
+
+    readResult.records.forEach((record) => {
+      console.log(`Found permitattributes: ${record.get("permitAttriList")}`);
+    });
+  } catch (error) {
+    console.error(`Something went wrong: ${error}`);
+  } finally {
+    await session.close();
+  }
+}
+
+//testing Query file owner function
+export async function query_file_owner(pictureset_id) {
+  const session = driver.session({ database: "neo4j" });
+  try {
+    console.log("Execute file owner retrival query");
+    const readQuery = `
+      MATCH (p1:IS {psid: '${pictureset_id}'})--(o:Person) 
+      RETURN o.uid AS uid
+      
+      `;
+
+    const readResult = await session.executeRead((tx) =>
+      tx.run(readQuery, { pictureset_id })
+    );
+
+    readResult.records.forEach((record) => {
+      console.log(`Found file owner: ${record.get("uid")}`);
+    });
+  } catch (error) {
+    console.error(`Something went wrong: ${error}`);
+  } finally {
+    await session.close();
+  }
+}
+
+//testing Query ESK function
+export async function query_EncSK(pictureset_id, list_of_permitted_attribute) {
+  const session = driver.session({ database: "neo4j" });
+  try {
+    console.log("Execute EncSK retrival query");
+    const readQuery = `
+      MATCH (p1:IS {psid: '${pictureset_id}'})--(p2:ESK)--(p3:SG)
+      WHERE p1.permitAttriList = '${list_of_permitted_attribute}'
+      RETURN p2.filePath AS filePath
+      
+      `;
+
+    const readResult = await session.executeRead((tx) =>
+      tx.run(readQuery, { pictureset_id }, { list_of_permitted_attribute })
+    );
+
+    readResult.records.forEach((record) => {
+      console.log(`Found EncSK: ${record.get("filePath")}`);
+    });
+  } catch (error) {
+    console.error(`Something went wrong: ${error}`);
+  } finally {
+    await session.close();
+  }
+}
+
+//testing Query all img of and imageset function
+export async function query_image(pictureset_id) {
+  const session = driver.session({ database: "neo4j" });
+  try {
+    console.log("Execute all img of a set retrival query");
+    const readQuery = `
+      MATCH (p:SG) --(p1:IS)
+      WHERE p1.psid = '${pictureset_id}'
+      RETURN p.filePath AS url , p.seqNo AS sequence
+      
+      `;
+
+    const readResult = await session.executeRead((tx) =>
+      tx.run(readQuery, { pictureset_id })
+    );
+
+    readResult.records.forEach((record) => {
+      console.log(
+        `Found EncSK: ${record.get("url")}, ${record.get("sequence")} `
+      );
+    });
+  } catch (error) {
+    console.error(`Something went wrong: ${error}`);
+  } finally {
+    await session.close();
+  }
+}
+
+//Edit ESK function
+export async function edit_encSK(filePath, new_filePath) {
+  const session = driver.session({ database: "neo4j" });
+  try {
+    console.log("Execute user attribute retrival query");
+    const readQuery = `
+
+      MATCH (n {name: '${filePath}'})
+      SET n.filePath = '${new_filePath}'
+      SET n.name = '${new_filePath}'
+      RETURN n AS newESK
+      
+      `;
+
+    const readResult = await session.executeRead((tx) =>
+      tx.run(readQuery, { filePath }, { new_filePath })
+    );
+
+    readResult.records.forEach((record) => {
+      console.log(`Editted EncSK: ${record.get("newESK")}`);
+    });
+  } catch (error) {
+    console.error(`Something went wrong: ${error}`);
+  } finally {
+    await session.close();
+  }
+}
