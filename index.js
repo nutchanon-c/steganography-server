@@ -99,11 +99,19 @@ app.get("/", function (req, res, next) {
   res.json({ msg: "Hello World" });
 });
 
+router.get("/newID", (request, response) => {
+  let set_id = uuidv4();
+  let res = { id: set_id };
+  console.log(`set_id res: ${res.id}`);
+  response.json({ id: set_id });
+});
+
 router.post("/new", async (request, response) => {
   //code to perform particular action.
   //To access POST variable use req.body()methods.
   console.log(request.body);
-  let set_id = uuidv4();
+  let set_id = request.body.set_id;
+  console.log(`SET ID IN NEW ${set_id}`);
   const user_attributes = request.body.user_attributes;
   const keyPath = request.body.keyPath;
   const uuid = request.body.uuid;
@@ -153,6 +161,7 @@ router.post("/request", (request, response) => {
   let set_id = request.body.set_id;
   let uuid = request.body.uuid;
   query_user_attributes(uuid).then((attr) => {
+    console.log(`attr: ${attr}`);
     let user_attr = attr.split(",");
     query_imageset_permissionAttributes(set_id).then((picAttrString) => {
       let set_attr = picAttrString.split(",");
@@ -160,8 +169,9 @@ router.post("/request", (request, response) => {
         query_EncSK(set_id, picAttrString).then((encSK_url) => {
           // get all image url of an image set
           query_image(set_id).then((sets) => {
+            console.log(`sets: ${sets}, key: ${encSK_url}`);
             response.json({
-              files_url: sets,
+              files: sets,
               key_url: encSK_url,
             });
           });

@@ -30,9 +30,9 @@ console.log("Start");
 //Create Nodes
 export async function createPerson(uid, attriList) {
   const session = driver.session({ database: "neo4j" });
-  console.log("In wongSad function");
+  // console.log("In wongSad function");
   try {
-    console.log("Try to query");
+    // console.log("Try to query");
     const result = await session.run(
       "CREATE (p:Person {name: $uid, uid: $uid, attriList: $attriList}) RETURN p",
       {
@@ -45,7 +45,8 @@ export async function createPerson(uid, attriList) {
     const singleRecord = result.records[0];
     const node = singleRecord.get(0);
 
-    console.log(node.properties.name);
+    // console.log(node.properties.name);
+  } catch {
   } finally {
     await session.close();
   }
@@ -58,7 +59,7 @@ export async function createImageSet(psid, permitAttriList) {
   const session = driver.session({ database: "neo4j" });
 
   try {
-    console.log("Try to query");
+    // console.log("Try to query");
     const result = await session.run(
       `
       MERGE (i:UserIds {value:"userid"}) ON CREATE SET i.user_id = 1 ON MATCH SET i.user_id = i.user_id + 1
@@ -73,7 +74,7 @@ export async function createImageSet(psid, permitAttriList) {
     const singleRecord = result.records[0];
     const node = singleRecord.get(0);
 
-    console.log(node.properties.name);
+    // console.log(node.properties.name);
     return true;
   } finally {
     await session.close();
@@ -87,7 +88,7 @@ export async function createStegoImage(filePath, seqNo) {
   const session = driver.session({ database: "neo4j" });
 
   try {
-    console.log("Try to query");
+    // console.log("Try to query");
     const result = await session.run(
       `
       CREATE (u:SG {name: 'stego_image', filePath:'${filePath}', seqNo: '${seqNo}'})
@@ -99,7 +100,7 @@ export async function createStegoImage(filePath, seqNo) {
     const singleRecord = result.records[0];
     const node = singleRecord.get(0);
 
-    console.log(node.properties.name);
+    // console.log(node.properties.name);
   } finally {
     await session.close();
     return true;
@@ -113,7 +114,7 @@ export async function createESK(filePath) {
   const session = driver.session({ database: "neo4j" });
 
   try {
-    console.log("Try to query");
+    // console.log("Try to query");
     const result = await session.run(
       `
       CREATE (u:ESK {name: '${filePath}', filePath: '${filePath}'})
@@ -125,7 +126,7 @@ export async function createESK(filePath) {
     const singleRecord = result.records[0];
     const node = singleRecord.get(0);
 
-    console.log(node.properties.name);
+    // console.log(node.properties.name);
     return true;
   } finally {
     await session.close();
@@ -146,7 +147,7 @@ export async function createRelationship(
   const session = driver.session({ database: "neo4j" });
 
   try {
-    console.log("Before relation");
+    // console.log("Before relation");
     if (number == 1) {
       //relationship dataowner -> IS; IS -> SI; IS -> ESK; ESK -> SI
       `
@@ -174,7 +175,7 @@ export async function createRelationship(
           person4Name,
         })
       );
-      console.log("Help");
+      // console.log("Help");
       // Check the write results.
       writeResult.records.forEach((record) => {
         const person1Node = record.get("p1");
@@ -182,11 +183,11 @@ export async function createRelationship(
         const person3Node = record.get("p3");
         const person4Node = record.get("p4");
 
-        console.log(
-          `Created friendship between: ${person1Node.properties.name}, ${person2Node.properties.name}, ${person3Node.properties.name}, ${person4Node.properties.name}`
-        );
+        // console.log(
+        //   `Created friendship between: ${person1Node.properties.name}, ${person2Node.properties.name}, ${person3Node.properties.name}, ${person4Node.properties.name}`
+        // );
       });
-      console.log("1");
+      // console.log("1");
     } /*else if (number == 2) {
       //relationship  <-> PSID
       const writeQuery = `MERGE (p1:Person { name: $person1Name })
@@ -211,14 +212,14 @@ export async function createRelationship(
     const writeResult = await session.writeTransaction((tx) =>
       tx.run(writeQuery, { person1Name, person2Name })
     );
-    console.log("Help");
+    // console.log("Help");
     // Check the write results.
     writeResult.records.forEach((record) => {
       const person1Node = record.get("p1");
       const person2Node = record.get("p2");
-      console.log(
-        `Created friendship between: ${person1Node.properties.name}, ${person2Node.properties.name}`
-      );
+      // console.log(
+      //   `Created friendship between: ${person1Node.properties.name}, ${person2Node.properties.name}`
+      // );
     });
   } catch (error) {
     console.error(`Something went wrong: ${error}`);
@@ -232,7 +233,7 @@ export async function createRelationship(
 export async function createR_EncSK_ImageSet(imageSet, EncSK) {
   const session = driver.session({ database: "neo4j" });
   try {
-    console.log("Executing Create Relation between EncSK and ImageSet");
+    // console.log("Executing Create Relation between EncSK and ImageSet");
     let writeQuery = `
     MATCH (p2:IS)
     MATCH (p4:ESK)
@@ -247,7 +248,7 @@ export async function createR_EncSK_ImageSet(imageSet, EncSK) {
     // const writeResult = await session.writeTransaction((tx) => tx.run(writeQuery))
     await session.run(writeQuery);
     return true;
-    console.log("SK-IS relation created");
+    // console.log("SK-IS relation created");
   } catch (error) {
     console.error(`Something went wrong: ${error}`);
   } finally {
@@ -260,7 +261,7 @@ export async function createR_EncSK_ImageSet(imageSet, EncSK) {
 export async function createR_SG_EncSK(StegoImg, EncSK) {
   const session = driver.session({ database: "neo4j" });
   try {
-    console.log("Executing Create Relation between EncSK and Stego Image");
+    // console.log("Executing Create Relation between EncSK and Stego Image");
     let writeQuery = `
     MATCH (p2:ESK)
     MATCH (p4:SG)
@@ -274,7 +275,7 @@ export async function createR_SG_EncSK(StegoImg, EncSK) {
     //Write transaction
     // const writeResult = await session.writeTransaction((tx) => tx.run(writeQuery))
     await session.run(writeQuery);
-    console.log("IS-SI relation created");
+    // console.log("IS-SI relation created");
     return true;
   } catch (error) {
     console.error(`Something went wrong: ${error}`);
@@ -302,7 +303,7 @@ export async function createR_SG_ImageSet(imageSet, stegoImageUrl) {
     //Write transaction
     // const writeResult = await session.writeTransaction((tx) => tx.run(writeQuery))
     await session.run(writeQuery);
-    console.log("IS-SI relation created");
+    // console.log("IS-SI relation created");
     return true;
   } catch (error) {
     console.error(`Something went wrong: ${error}`);
@@ -316,7 +317,7 @@ export async function createR_SG_ImageSet(imageSet, stegoImageUrl) {
 export async function createR_DataOwner_ImageSet(dataOwner, imageSet) {
   const session = driver.session({ database: "neo4j" });
   try {
-    console.log("Executing Create Relation between EncSK and ImageSet");
+    // // console.log("Executing Create Relation between EncSK and ImageSet");
     let writeQuery = `
     MATCH (p2:Person)
     MATCH (p4:IS)
@@ -330,7 +331,7 @@ export async function createR_DataOwner_ImageSet(dataOwner, imageSet) {
     //Write transaction
     // const writeResult = await session.writeTransaction((tx) => tx.run(writeQuery))
     await session.run(writeQuery);
-    console.log("IS-SI relation created");
+    // console.log("IS-SI relation created");
     return true;
   } catch (error) {
     console.error(`Something went wrong: ${error}`);
@@ -344,7 +345,7 @@ export async function createR_DataOwner_ImageSet(dataOwner, imageSet) {
 export async function query_user_attributes(userID) {
   const session = driver.session({ database: "neo4j" });
   try {
-    console.log("Execute user attribute retrival query");
+    // console.log("Execute user attribute retrival query");
     const readQuery = `
 
       MATCH (p:Person)
@@ -357,9 +358,12 @@ export async function query_user_attributes(userID) {
       tx.run(readQuery, { userID })
     );
 
+    let res = "";
     readResult.records.forEach((record) => {
-      console.log(`Found attributes: ${record.get("attriList")}`);
+      // console.log(`Found attributes: ${record.get("attriList")}`);
+      res = record.get("attriList");
     });
+    return res;
   } catch (error) {
     console.error(`Something went wrong: ${error}`);
   } finally {
@@ -371,7 +375,7 @@ export async function query_user_attributes(userID) {
 export async function query_imageset_permissionAttributes(pictureset_id) {
   const session = driver.session({ database: "neo4j" });
   try {
-    console.log("Execute imageset permit attribute retrival query");
+    // console.log("Execute imageset permit attribute retrival query");
     const readQuery = `
       MATCH (p:IS)
       WHERE p.psid = '${pictureset_id}'
@@ -383,9 +387,12 @@ export async function query_imageset_permissionAttributes(pictureset_id) {
       tx.run(readQuery, { pictureset_id })
     );
 
+    let res = "";
     readResult.records.forEach((record) => {
-      console.log(`Found permitattributes: ${record.get("permitAttriList")}`);
+      // console.log(`Found permitattributes: ${record.get("permitAttriList")}`);
+      res = record.get("permitAttriList");
     });
+    return res;
   } catch (error) {
     console.error(`Something went wrong: ${error}`);
   } finally {
@@ -397,7 +404,7 @@ export async function query_imageset_permissionAttributes(pictureset_id) {
 export async function query_file_owner(pictureset_id) {
   const session = driver.session({ database: "neo4j" });
   try {
-    console.log("Execute file owner retrival query");
+    // console.log("Execute file owner retrival query");
     const readQuery = `
       MATCH (p1:IS {psid: '${pictureset_id}'})--(o:Person) 
       RETURN o.uid AS uid
@@ -409,7 +416,7 @@ export async function query_file_owner(pictureset_id) {
     );
 
     readResult.records.forEach((record) => {
-      console.log(`Found file owner: ${record.get("uid")}`);
+      // console.log(`Found file owner: ${record.get("uid")}`);
     });
   } catch (error) {
     console.error(`Something went wrong: ${error}`);
@@ -422,7 +429,7 @@ export async function query_file_owner(pictureset_id) {
 export async function query_EncSK(pictureset_id, list_of_permitted_attribute) {
   const session = driver.session({ database: "neo4j" });
   try {
-    console.log("Execute EncSK retrival query");
+    // console.log("Execute EncSK retrival query");
     const readQuery = `
       MATCH (p1:IS {psid: '${pictureset_id}'})--(p2:ESK)--(p3:SG)
       WHERE p1.permitAttriList = '${list_of_permitted_attribute}'
@@ -434,9 +441,12 @@ export async function query_EncSK(pictureset_id, list_of_permitted_attribute) {
       tx.run(readQuery, { pictureset_id }, { list_of_permitted_attribute })
     );
 
+    let res = "";
     readResult.records.forEach((record) => {
-      console.log(`Found EncSK: ${record.get("filePath")}`);
+      // console.log(`Found EncSK: ${record.get("filePath")}`);
+      res = record.get("filePath");
     });
+    return res;
   } catch (error) {
     console.error(`Something went wrong: ${error}`);
   } finally {
@@ -448,7 +458,7 @@ export async function query_EncSK(pictureset_id, list_of_permitted_attribute) {
 export async function query_image(pictureset_id) {
   const session = driver.session({ database: "neo4j" });
   try {
-    console.log("Execute all img of a set retrival query");
+    // console.log("Execute all img of a set retrival query");
     const readQuery = `
       MATCH (p:SG) --(p1:IS)
       WHERE p1.psid = '${pictureset_id}'
@@ -459,12 +469,14 @@ export async function query_image(pictureset_id) {
     const readResult = await session.executeRead((tx) =>
       tx.run(readQuery, { pictureset_id })
     );
-
+    let res = [];
     readResult.records.forEach((record) => {
-      console.log(
-        `Found EncSK: ${record.get("url")}, ${record.get("sequence")} `
-      );
+      let url = record.get("url");
+      let seq = record.get("sequence");
+      // console.log(`Found EncSK: ${url}, ${seq} `);
+      res.push({ url: url, sequence: seq });
     });
+    return res;
   } catch (error) {
     console.error(`Something went wrong: ${error}`);
   } finally {
@@ -476,7 +488,7 @@ export async function query_image(pictureset_id) {
 export async function edit_encSK(filePath, new_filePath) {
   const session = driver.session({ database: "neo4j" });
   try {
-    console.log("Execute user attribute retrival query");
+    // console.log("Execute user attribute retrival query");
     const readQuery = `
 
       MATCH (n {name: '${filePath}'})
@@ -491,7 +503,7 @@ export async function edit_encSK(filePath, new_filePath) {
     );
 
     readResult.records.forEach((record) => {
-      console.log(`Editted EncSK: ${record.get("newESK")}`);
+      // console.log(`Editted EncSK: ${record.get("newESK")}`);
     });
   } catch (error) {
     console.error(`Something went wrong: ${error}`);
