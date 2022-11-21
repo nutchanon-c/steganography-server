@@ -1,5 +1,5 @@
 // const { exec } = require("child_process");
-import exec from "child_process";
+import { exec } from "child_process";
 // require("dotenv").config();
 import dotenv from "dotenv";
 dotenv.config();
@@ -162,10 +162,12 @@ router.post("/request", (request, response) => {
   let uuid = request.body.uuid;
   query_user_attributes(uuid).then((attr) => {
     console.log(`attr: ${attr}`);
-    let user_attr = attr.split(",");
+
+    // user_attr = ["sysadmin"]; // TODO: FIX HARD CODE
     query_imageset_permissionAttributes(set_id).then((picAttrString) => {
       let set_attr = picAttrString.split(",");
-      if (checkArrayEqual(user_attr, set_attr)) {
+      console.log(`set attr: ${set_attr}, user attr: ${attr.split(",")}`);
+      if (checkArrayEqual(attr.split(","), picAttrString.split(","))) {
         query_EncSK(set_id, picAttrString).then((encSK_url) => {
           // get all image url of an image set
           query_image(set_id).then((sets) => {
@@ -193,7 +195,8 @@ router.post("/revoke", async (request, response) => {
   let finished = false;
 
   query_file_owner(set_id).then((owner) => {
-    let isOwner = owner === uuid;
+    var isOwner = owner === uuid;
+    console.log(`isOwner ${isOwner} ${owner} ${uuid}`);
     {
       if (isOwner) {
         query_imageset_permissionAttributes(set_id).then((set_attr) => {
@@ -202,16 +205,41 @@ router.post("/revoke", async (request, response) => {
             downloadFile(encryptedSessionKeyUrl, `${uuid}.key.cpabe`).then(
               () => {
                 console.log(`download key path: ./downloads/${uuid}.key.cpabe`);
-                decryptSK(`./downloads/${uuid}.key.cpabe`);
-                generateABEKey(new_attr, `./downloads/${uuid}.key`);
-                uploadFile(
-                  `./downloads/${uuid}.key`,
-                  `${uuid}/${uuid.key}`
-                ).then((location) => {
-                  edit_encSK(encryptedSessionKeyUrl, location).then(() => {
-                    finished = true;
-                  });
-                });
+                setTimeout(function () {
+                  // console.log("Executed after 1 second");
+                  // decryptSK(`./downloads/${uuid}.key.cpabe`, `./sysadmin-key`);
+                  executeTerminalCommand(
+                    `cpabe-dec ${PUB_KEY_PATH} sysadmin-key ./downloads/${uuid}.key.cpabe`
+                  );
+                  setTimeout(function () {
+                    // console.log("Executed after 1 second");
+                    executeTerminalCommand(
+                      `cpabe-enc -k ${PUB_KEY_PATH} ./downloads/${uuid}.key "${new_attr.join(
+                        " and "
+                      )}"`
+                    );
+                    setTimeout(function () {
+                      // console.log("Executed after 1 second");
+                      uploadFile(
+                        `./downloads/${uuid}.key`,
+                        `${uuid}/${set_id}/${set_id}.key.cpabe`
+                      ).then((location) => {
+                        edit_encSK(
+                          `https://${process.env.AWS_BUCKET_NAME}.s3.${process.env.AWS_REGION}.amazonaws.com/${uuid}/${set_id}/${set_id}.key.txt.cpabe`,
+                          location
+                        ).then(() => {
+                          finished = true;
+                          if (finished) {
+                            response.json({ msg: "success" });
+                          } else {
+                            response.json({ error: "failed" });
+                          }
+                        });
+                      });
+                    }, 1000);
+                  }, 1000);
+                  // generateABEKey(new_attr, `./downloads/${uuid}.key`);
+                }, 1000);
               }
             );
           });
@@ -221,12 +249,6 @@ router.post("/revoke", async (request, response) => {
       }
     }
   });
-
-  if (finished) {
-    response.json({ msg: "success" });
-  } else {
-    response.json({ error: "failed" });
-  }
 });
 
 const s3 = new AWS.S3({
@@ -281,9 +303,9 @@ const generateABEKey = (attributes, keyName) => {
   console.log(`${keyName} generated`);
 };
 
-const decryptSK = (keyName) => {
+const decryptSK = (keyName, abekey) => {
   return executeTerminalCommand(
-    `cpabe-dec ${PUB_KEY_PATH} ${MASTER_KEY_PATH} ${keyName}`
+    `cpabe-dec ${PUB_KEY_PATH} ${abekey} ${keyName}`
   );
 };
 
