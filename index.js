@@ -38,6 +38,7 @@ import {
   createR_SG_ImageSet,
   createStegoImage,
   edit_encSK,
+  edit_psAttr,
   query_EncSK,
   query_file_owner,
   query_image,
@@ -228,12 +229,16 @@ router.post("/revoke", async (request, response) => {
                           `https://${process.env.AWS_BUCKET_NAME}.s3.${process.env.AWS_REGION}.amazonaws.com/${uuid}/${set_id}/${set_id}.key.txt.cpabe`,
                           location
                         ).then(() => {
-                          finished = true;
-                          if (finished) {
-                            response.json({ msg: "success" });
-                          } else {
-                            response.json({ error: "failed" });
-                          }
+                          edit_psAttr(set_id, ["sysadmin"], new_attr).then(
+                            () => {
+                              finished = true;
+                              if (finished) {
+                                response.json({ msg: "success" });
+                              } else {
+                                response.json({ error: "failed" });
+                              }
+                            }
+                          );
                         });
                       });
                     }, 1000);

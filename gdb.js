@@ -415,7 +415,7 @@ export async function query_file_owner(pictureset_id) {
       tx.run(readQuery, { pictureset_id })
     );
 
-    let res = ""
+    let res = "";
     readResult.records.forEach((record) => {
       // console.log(`Found file owner: ${record.get("uid")}`);
       res = record.get("uid");
@@ -505,6 +505,30 @@ export async function edit_encSK(filePath, new_filePath) {
     const readResult = await session.executeRead((tx) =>
       tx.run(readQuery, { filePath }, { new_filePath })
     );
+
+    readResult.records.forEach((record) => {
+      // console.log(`Editted EncSK: ${record.get("newESK")}`);
+    });
+  } catch (error) {
+    console.error(`Something went wrong: ${error}`);
+  } finally {
+    await session.close();
+  }
+}
+//Edit PS attr function
+export async function edit_psAttr(psid, oldAttrList, newPermitAttrList) {
+  let joinedList = newPermitAttrList.join(",");
+
+  const session = driver.session({ database: "neo4j" });
+  try {
+    // console.log("Execute user attribute retrival query");
+    const readQuery = `
+    MATCH (n:IS { psid: '${psid}', permitAttriList: '${oldAttrList.join(",")}' }) 
+    SET n.permitAttriList = '${joinedList}'
+    RETURN n       
+      `;
+
+    const readResult = await session.executeRead((tx) => tx.run(readQuery));
 
     readResult.records.forEach((record) => {
       // console.log(`Editted EncSK: ${record.get("newESK")}`);
