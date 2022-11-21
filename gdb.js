@@ -415,9 +415,13 @@ export async function query_file_owner(pictureset_id) {
       tx.run(readQuery, { pictureset_id })
     );
 
+    let res = ""
     readResult.records.forEach((record) => {
       // console.log(`Found file owner: ${record.get("uid")}`);
+      res = record.get("uid");
     });
+
+    return res;
   } catch (error) {
     console.error(`Something went wrong: ${error}`);
   } finally {
